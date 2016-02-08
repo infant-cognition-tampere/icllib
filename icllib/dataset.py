@@ -22,13 +22,14 @@ class Dataset(object):
         raise DatasetError('Not Implemented')
 
 class CSVDataset(Dataset):
-    def __init__(self, directory, filename):
+    def __init__(self, directory, filename, replaceRotatingTrialIDs = False):
         self.directory = directory
-        self.tbt = TBTFile(join(directory, filename))
+        self.tbt = TBTFile(join(directory, filename), replaceRotatingTrialIDs)
+        self.replaceRotatingTrialIDs = replaceRotatingTrialIDs
 
     @lru_cache(maxsize=32)
     def get_gazedata(self, name):
-        return GazedataFile(join(self.directory, name))
+        return GazedataFile(join(self.directory, name), self.replaceRotatingTrialIDs)
 
     def list_gazedatas(self):
         return np.unique(self.tbt.data['filename'])
@@ -132,7 +133,7 @@ def get_common_name(name):
         return name
 
 class TBTFile():
-    def __init__(self, filename):
+    def __init__(self, filename, replaceRotatingTrialIDs = False):
         print('Opening %s:' % filename)
         with open(filename, 'r') as f:
             seek_past_first_sep(f)
@@ -148,6 +149,14 @@ class TBTFile():
                                       delimiter=dialect.delimiter,
                                       names=names,
                                       dtype=None)
+
+            if replaceRotatingTrialIDs:
+                for gzdfn in np.unique(self.data['filename']):
+                    selector = self.data['filename'] == gzdfn
+                    self.data['trialid'][selector] = np.arange(1, np.sum(selector) + 1)
+
+                    print (np.arange(1, np.sum(selector) + 1))
+                    print (self.data[selector]['trialid'])
 
 def _get_common_gzname(name):
     substitutes = {'diameterpupillefteye': 'pupil_l',
@@ -176,20 +185,46 @@ def _convert_type(s):
     return s
 
 class GazedataFile():
-    def __init__(self, filename):
+    def __init__(self, filename, replaceRotatingTrialIDs = False):
         from csv import DictReader
 
         print("Load GZDF: %s" % filename)
-        with open(filename, 'rb') as f:
-            self.filename = filename
+        self.filename = filename
+        try:
+            raise IOError
+            self.data = np.load(filename + '.npz')['data']
+        except IOError:
+            with open(filename, 'rb') as f:
+                seek_past_first_sep(f)
+                r = DictReader(f, delimiter='\t')
+                data = [{k: _convert_type(v) for k, v in d.items()} for d in r]
+                data = {k: [v[k] for v in data] for k in data[0].keys()}
 
-            seek_past_first_sep(f)
-            r = DictReader(f, delimiter='\t')
-            data = [{k: _convert_type(v) for k, v in d.items()} for d in r]
-            data = {k: [v[k] for v in data] for k in data[0].keys()}
+                names = [_get_common_gzname(s.lower().strip()) for s in data.keys()]
 
-            names = [_get_common_gzname(s.lower().strip()) for s in data.keys()]
+                self.data = np.rec.fromarrays(data.values(), names=','.join(names))
 
-            self.data = np.rec.fromarrays(data.values(), names=','.join(names))
+            self.data['userdefined_1'][self.data['userdefined_1'] == 'Stimulus'] = 'Face'
 
-        self.data['userdefined_1'][self.data['userdefined_1'] == 'Stimulus'] = 'Face'
+            if replaceRotatingTrialIDs:
+                selector = np.array(map(str, self.data['trialid'])) != 'None'
+                d = np.array(map(int, self.data['trialid'][selector]))
+
+                diff = np.diff(d)
+                diff[diff < 0] = 1
+                d = np.cumsum(np.concatenate(([1], diff)))
+
+                print (d)
+                print (len(d))
+                print (len(self.data['trialid'][selector]))
+                print (self.data.dtype)
+
+                if self.data.dtype['trialid'] == 'S4':
+                    d = np.array(map(str, d))
+
+                self.data['trialid'][selector] = d
+                #(self.data['trialid'][selector])[selector2] = d
+
+            np.savez(filename + '.npz', data=self.data)
+
+        print("Loaded GZDF")
