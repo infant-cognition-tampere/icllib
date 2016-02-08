@@ -11,7 +11,7 @@ analysis software at Infant Cognition Lab.
 
 .. image:: https://travis-ci.org/infant-cognition-tampere/icllib.svg
   :target: https://travis-ci.org/infant-cognition-tampere/icllib
-.. image:: https://coveralls.io/repos/infant-cognition-tampere/icllib/badge.svg?branch=master&service=github
+.. image:: https://coveralls.io/repos/github/infant-cognition-tampere/icllib/badge.svg?branch=master
   :target: https://coveralls.io/github/infant-cognition-tampere/icllib?branch=master
 
 
