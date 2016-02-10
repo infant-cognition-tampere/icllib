@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 from os.path import join
 
@@ -7,8 +6,10 @@ try:
 except ImportError:
     from functools import lru_cache
 
+
 class DatasetError(Exception):
     pass
+
 
 class Dataset(object):
     """ Convenience class for accessing the whole dataset """
@@ -21,18 +22,21 @@ class Dataset(object):
     def list_gazedatas(self):
         raise DatasetError('Not Implemented')
 
+
 class CSVDataset(Dataset):
-    def __init__(self, directory, filename, replaceRotatingTrialIDs = False):
+    def __init__(self, directory, filename, replaceRotatingTrialIDs=False):
         self.directory = directory
         self.tbt = TBTFile(join(directory, filename), replaceRotatingTrialIDs)
         self.replaceRotatingTrialIDs = replaceRotatingTrialIDs
 
     @lru_cache(maxsize=32)
     def get_gazedata(self, name):
-        return GazedataFile(join(self.directory, name), self.replaceRotatingTrialIDs)
+        return GazedataFile(join(self.directory, name),
+                            self.replaceRotatingTrialIDs)
 
     def list_gazedatas(self):
         return np.unique(self.tbt.data['filename'])
+
 
 class TrialIterator(object):
     """ Iterate trials from dataset """
@@ -56,11 +60,14 @@ class TrialIterator(object):
     def __next__(self):
         if self.current < self.maskedtbt.shape[0]:
             current_tbt_line = self.maskedtbt[self.current]
-            gazedata = self.dataset.get_gazedata(current_tbt_line['filename']).data
+            gazedata = self.dataset.get_gazedata(
+                current_tbt_line['filename']).data
 
             trialid = current_tbt_line['trialid']
-            print('fname: %s, trialid: %s' % (current_tbt_line['filename'], str(trialid)))
-            retval = gazedata[np.array(map(str, gazedata['trialid'])) == str(trialid)]
+            print('fname: %s, trialid: %s' % (current_tbt_line['filename'],
+                  str(trialid)))
+            retval = gazedata[np.array(map(str, gazedata['trialid'])) ==
+                              str(trialid)]
 
             gzdmask = np.array([True] * retval.shape[0])
 
@@ -77,13 +84,14 @@ class TrialIterator(object):
     def next(self):
         return self.__next__()
 
+
 def seek_past_first_sep(filelike):
     import re
 
     line = filelike.readline().strip()
     if line != 'sep=' and line != 'sep=,':
         match = re.search('sep=,', str(line))
-        if match == None:
+        if match is None:
             filelike.seek(0)
             return
 
@@ -96,22 +104,24 @@ def sniff_csv_dialect(filelike):
 
     loc = filelike.tell()
 
-    dialect = Sniffer().sniff(str(filelike.read(4096)), delimiters=[',', ';', '\t'])
+    dialect = Sniffer().sniff(str(filelike.read(4096)),
+                              delimiters=[',', ';', '\t'])
 
     filelike.seek(loc)
 
     return dialect
 
+
 def read_csv_names(filelike, dialect, delimiter=None):
     from csv import reader
 
-    delimiter = delimiter if dialect == None else dialect.delimiter
+    delimiter = delimiter if dialect is None else dialect.delimiter
     r = reader(filelike, dialect, delimiter=delimiter)
 
     return next(r)
 
     def filter_unwanted(l):
-        return filter(lambda x: x!= 'sep=' and x != '', l)
+        return filter(lambda x: x != 'sep=' and x != '', l)
 
     firstline = filter_unwanted(r.next())
     print('firstline_check: %s' % firstline)
@@ -121,19 +131,22 @@ def read_csv_names(filelike, dialect, delimiter=None):
 
     return firstline
 
+
 def get_common_name(name):
-    substitutes = {'condition': 'stimulus',
-        'aoi border violation before disengagement or1000ms (during nvs)':
-            'aoi border violation',
-        'trial number': 'trialid'}
+    substitutes = \
+        {'condition': 'stimulus',
+         'aoi border violation before disengagement or1000ms (during nvs)':
+             'aoi border violation',
+         'trial number': 'trialid'}
 
     try:
         return substitutes[name]
     except KeyError:
         return name
 
+
 class TBTFile():
-    def __init__(self, filename, replaceRotatingTrialIDs = False):
+    def __init__(self, filename, replaceRotatingTrialIDs=False):
         print('Opening %s:' % filename)
         with open(filename, 'r') as f:
             seek_past_first_sep(f)
@@ -153,10 +166,12 @@ class TBTFile():
             if replaceRotatingTrialIDs:
                 for gzdfn in np.unique(self.data['filename']):
                     selector = self.data['filename'] == gzdfn
-                    self.data['trialid'][selector] = np.arange(1, np.sum(selector) + 1)
+                    self.data['trialid'][selector] = \
+                        np.arange(1, np.sum(selector) + 1)
 
-                    print (np.arange(1, np.sum(selector) + 1))
-                    print (self.data[selector]['trialid'])
+                    print(np.arange(1, np.sum(selector) + 1))
+                    print(self.data[selector]['trialid'])
+
 
 def _get_common_gzname(name):
     substitutes = {'diameterpupillefteye': 'pupil_l',
@@ -171,6 +186,7 @@ def _get_common_gzname(name):
     except KeyError:
         return name
 
+
 def _convert_type(s):
     converters = [int, float, str]
 
@@ -184,8 +200,9 @@ def _convert_type(s):
 
     return s
 
+
 class GazedataFile():
-    def __init__(self, filename, replaceRotatingTrialIDs = False):
+    def __init__(self, filename, replaceRotatingTrialIDs=False):
         from csv import DictReader
 
         print("Load GZDF: %s" % filename)
@@ -200,11 +217,14 @@ class GazedataFile():
                 data = [{k: _convert_type(v) for k, v in d.items()} for d in r]
                 data = {k: [v[k] for v in data] for k in data[0].keys()}
 
-                names = [_get_common_gzname(s.lower().strip()) for s in data.keys()]
+                names = [_get_common_gzname(s.lower().strip())
+                         for s in data.keys()]
 
-                self.data = np.rec.fromarrays(data.values(), names=','.join(names))
+                self.data = np.rec.fromarrays(data.values(),
+                                              names=','.join(names))
 
-            self.data['userdefined_1'][self.data['userdefined_1'] == 'Stimulus'] = 'Face'
+            self.data['userdefined_1'][self.data['userdefined_1'] ==
+                                       'Stimulus'] = 'Face'
 
             if replaceRotatingTrialIDs:
                 selector = np.array(map(str, self.data['trialid'])) != 'None'
@@ -214,16 +234,16 @@ class GazedataFile():
                 diff[diff < 0] = 1
                 d = np.cumsum(np.concatenate(([1], diff)))
 
-                print (d)
-                print (len(d))
-                print (len(self.data['trialid'][selector]))
-                print (self.data.dtype)
+                print(d)
+                print(len(d))
+                print(len(self.data['trialid'][selector]))
+                print(self.data.dtype)
 
                 if self.data.dtype['trialid'] == 'S4':
                     d = np.array(map(str, d))
 
                 self.data['trialid'][selector] = d
-                #(self.data['trialid'][selector])[selector2] = d
+                # (self.data['trialid'][selector])[selector2] = d
 
             np.savez(filename + '.npz', data=self.data)
 

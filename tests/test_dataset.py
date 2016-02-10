@@ -29,7 +29,8 @@ class TestDataset(unittest.TestCase):
         dirs = [join(basedir, d) for d in dataset_dirs]
 
         # Load only datasets that exist
-        dir_tbts = filter(lambda x: exists(x[0]) and exists(join(x[0], x[1])), zip(dirs, tbt_files))
+        dir_tbts = filter(lambda x: exists(x[0]) and exists(join(x[0], x[1])),
+                          zip(dirs, tbt_files))
         cls.datasets = [CSVDataset(d, tbt) for d, tbt in dir_tbts]
 
     def test_dataset(self):
@@ -57,14 +58,18 @@ class TestDataset(unittest.TestCase):
         print(common_names)
 
         for ds in self.datasets:
-            print("Unique names in %s: %s" % (ds.directory, set(ds.tbt.names) - common_names))
+            print("Unique names in %s: %s" %
+                  (ds.directory, set(ds.tbt.names) - common_names))
             print("Stimulus names :%s" % np.unique(ds.tbt.data['stimulus']))
             print("Userdefined names :%s" % np.unique(ds.tbt.data['stimulus']))
 
-        list_of_gznames = [set(ds.get_gazedata(ds.list_gazedatas()[0]).data.dtype.names) for ds in self.datasets]
+        list_of_gznames = \
+            [set(ds.get_gazedata(ds.list_gazedatas()[0]).data.dtype.names)
+             for ds in self.datasets]
         common_gznames = set.intersection(*list_of_gznames)
 
         print(common_gznames)
 
         for gzn, datasetname in zip(list_of_gznames, dataset_dirs):
-            print("Unique gazedata header names in %s: %s" % (datasetname, gzn - common_gznames))
+            print("Unique gazedata header names in %s: %s" %
+                  (datasetname, gzn - common_gznames))
