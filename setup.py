@@ -8,7 +8,7 @@ https://github.com/pypa/sampleproject
 """
 
 # Always prefer setuptools over distutils
-from setuptools import setup, find_packages
+from setuptools import setup
 # To use a consistent encoding
 from codecs import open
 from os import path
@@ -23,7 +23,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='icllib',
     version='0.0.1',
-    description='Collection of common pieces used in analysis software ' \
+    description='Collection of common pieces used in analysis software '
                 'at Infant Cognition Lab',
     long_description=long_description,
     url='https://github.com/infant-cognition-tampere/icllib',
