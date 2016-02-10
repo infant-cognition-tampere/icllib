@@ -97,6 +97,6 @@ setup(
     entry_points={},
 
     # To use nose2 to run your package’s tests, add the following
-    tests_require=['nose2', 'unittest2'],
+    tests_require=['nose2', 'unittest2', 'pep8'],
     test_suite='nose2.collector.collector',
 )
