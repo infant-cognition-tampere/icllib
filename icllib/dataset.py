@@ -1,3 +1,4 @@
+"""Convenience access methods for reading different datasets."""
 import numpy as np
 from os.path import join
 
@@ -8,40 +9,64 @@ except ImportError:
 
 
 class DatasetError(Exception):
+    """Exception class for Dataset Errors."""
+
     pass
 
 
 class Dataset(object):
-    """ Convenience class for accessing the whole dataset """
+    """Convenience class for accessing the whole dataset."""
+
     def __init__(self):
+        """Consructor."""
         pass
 
     def get_gazedata(self, name):
+        """Get Gazedata from Dataset."""
         raise DatasetError('Not Implemented')
 
     def list_gazedatas(self):
+        """List available Gazedatas."""
         raise DatasetError('Not Implemented')
 
 
 class CSVDataset(Dataset):
+    """CSVDataset implementation of Dataset interface."""
+
     def __init__(self, directory, filename, replaceRotatingTrialIDs=False):
+        """Constructor.
+
+        Input directory - Directory of dataset
+              filename - Name of TBT file in directory
+              replaceRotatingTrialIDs - Set True if Trial IDs rotate
+        """
         self.directory = directory
         self.tbt = TBTFile(join(directory, filename), replaceRotatingTrialIDs)
         self.replaceRotatingTrialIDs = replaceRotatingTrialIDs
 
     @lru_cache(maxsize=32)
     def get_gazedata(self, name):
+        """Get Gazedata from Dataset."""
         return GazedataFile(join(self.directory, name),
                             self.replaceRotatingTrialIDs)
 
     def list_gazedatas(self):
+        """List available Gazedatas."""
         return np.unique(self.tbt.data['filename'])
 
 
 class TrialIterator(object):
-    """ Iterate trials from dataset """
-    def __init__(self, dataset, tbtfilter=None, gazedatafilter=None):
+    """Iterate trials from dataset."""
 
+    def __init__(self, dataset, tbtfilter=None, gazedatafilter=None):
+        """Constructor.
+
+        Input dataset - Dataset to iterate through
+              tbtfilter - List of lambda functions to use for filtering entries
+                          from tbt file.
+              gazedatafilter - List of lambda functions to use for filtering
+                               gazedata.
+        """
         self.dataset = dataset
         self.gazedatafilter = gazedatafilter
 
@@ -55,9 +80,11 @@ class TrialIterator(object):
         self.current = 0
 
     def __iter__(self):
+        """Return the iterable (=self)."""
         return self
 
     def __next__(self):
+        """Return the next in series."""
         if self.current < self.maskedtbt.shape[0]:
             current_tbt_line = self.maskedtbt[self.current]
             gazedata = self.dataset.get_gazedata(
@@ -82,10 +109,15 @@ class TrialIterator(object):
             raise StopIteration
 
     def next(self):
+        """Return the next in series.
+
+        Compatibility between Python 2 and 3.
+        """
         return self.__next__()
 
 
 def seek_past_first_sep(filelike):
+    """Function to seek past first sep= entry in file."""
     import re
 
     line = filelike.readline().strip()
@@ -100,6 +132,7 @@ def seek_past_first_sep(filelike):
 
 
 def sniff_csv_dialect(filelike):
+    """Return CSV dialect object for file."""
     from csv import Sniffer
 
     loc = filelike.tell()
@@ -113,6 +146,7 @@ def sniff_csv_dialect(filelike):
 
 
 def read_csv_names(filelike, dialect, delimiter=None):
+    """Read the header names from CSV file."""
     from csv import reader
 
     delimiter = delimiter if dialect is None else dialect.delimiter
@@ -133,6 +167,7 @@ def read_csv_names(filelike, dialect, delimiter=None):
 
 
 def get_common_name(name):
+    """Used for replacing names in TBT file."""
     substitutes = \
         {'condition': 'stimulus',
          'aoi border violation before disengagement or1000ms (during nvs)':
@@ -146,7 +181,14 @@ def get_common_name(name):
 
 
 class TBTFile():
+    """Abstraction class for TBT file."""
+
     def __init__(self, filename, replaceRotatingTrialIDs=False):
+        """Constructor.
+
+        Input filename - Path to TBT file
+              replaceRotatingTrialIDs - Set True if Trial IDs rotate
+        """
         print('Opening %s:' % filename)
         with open(filename, 'r') as f:
             seek_past_first_sep(f)
@@ -174,6 +216,7 @@ class TBTFile():
 
 
 def _get_common_gzname(name):
+    """Used for reaplcing names in Gazedata file."""
     substitutes = {'diameterpupillefteye': 'pupil_l',
                    'diameterpupilrighteye': 'pupil_r',
                    'lefteyepupildiameter': 'pupil_l',
@@ -188,6 +231,7 @@ def _get_common_gzname(name):
 
 
 def _convert_type(s):
+    """Convert type from string to python types while reading CSV."""
     converters = [int, float, str]
 
     for c in converters:
@@ -202,7 +246,14 @@ def _convert_type(s):
 
 
 class GazedataFile():
+    """Abstraction class for Gazedata file."""
+
     def __init__(self, filename, replaceRotatingTrialIDs=False):
+        """Constructor.
+
+        Input filename - Path to Gazedata file
+              replaceRotatingTrialIDs - Set True if Trial IDs rotate
+        """
         from csv import DictReader
 
         print("Load GZDF: %s" % filename)

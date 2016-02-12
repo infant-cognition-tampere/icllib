@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-ICLlib
+ICLlib.
 
 This setup.py is based on:
 https://packaging.python.org/en/latest/distributing.html

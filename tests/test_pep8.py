@@ -1,9 +1,12 @@
+"""PEP8 conformance testcase."""
 import unittest2 as unittest
 import pep8
 from glob import glob
 
 
 class TestPEP8(unittest.TestCase):
+    """PEP8 conformance testcase."""
+
     def test_pep8_conformance(self):
         """Test PEP8 conformance."""
         pep8style = pep8.StyleGuide()

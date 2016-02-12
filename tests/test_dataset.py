@@ -1,3 +1,4 @@
+"""Unit test for Dataset module."""
 import unittest2 as unittest
 from os.path import join, exists
 from icllib.dataset import CSVDataset
@@ -23,9 +24,11 @@ tbt_files = ['disengagement_results.csv',
 
 
 class TestDataset(unittest.TestCase):
+    """Unit test for Dataset module."""
 
     @classmethod
     def setUpClass(cls):
+        """Set up unit test."""
         dirs = [join(basedir, d) for d in dataset_dirs]
 
         # Load only datasets that exist
@@ -34,6 +37,7 @@ class TestDataset(unittest.TestCase):
         cls.datasets = [CSVDataset(d, tbt) for d, tbt in dir_tbts]
 
     def test_dataset(self):
+        """Basic dataset test."""
         for ds in self.datasets:
             print(ds.directory)
             print(ds.tbt.data.dtype)
@@ -41,7 +45,7 @@ class TestDataset(unittest.TestCase):
             self.assertEqual(len(ds.list_gazedatas()), 1)
 
     def test_iterate_trials(self):
-        """ Try to iterate over trials """
+        """Try to iterate over trials."""
         from icllib.dataset import TrialIterator
 
         for ds in self.datasets:
@@ -52,6 +56,7 @@ class TestDataset(unittest.TestCase):
 
     @unittest.skip("not really a test")
     def test_common_names(self):
+        """Find common names in different datasets, for dev purposes."""
         list_of_names = [set(ds.tbt.names) for ds in self.datasets]
         common_names = set.intersection(*list_of_names)
 
