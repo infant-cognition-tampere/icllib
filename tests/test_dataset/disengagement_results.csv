@@ -1,0 +1,3 @@
+sep=,
+Filename,Trial number,Stimulus,Target,Face up,Target up,Analysis perioid len,last time in center aoi,first time in side aoi,valid gaze r %,valid gaze l %,longest non-valid streak (r),longest non-valid streak (l),longest non-valid combined,% inside center aoi bef disengagement,aoi border violation before disengagement or1000ms (during nvs),combination,re-engagement time,csaccpindex
+1.gazedata,1,fearful.bmp,left,983.199,3012.9839,1556.4229,573.2991,576.655,0.1453,0.1453,626.5459,619.8289,619.8289,1,0,-1,-1,-1

@@ -35,6 +35,8 @@ class TestDataset(unittest.TestCase):
         dir_tbts = filter(lambda x: exists(x[0]) and exists(join(x[0], x[1])),
                           zip(dirs, tbt_files))
         cls.datasets = [CSVDataset(d, tbt) for d, tbt in dir_tbts]
+        cls.datasets += [CSVDataset('tests/test_dataset',
+                                    'disengagement_results.csv')]
 
     def test_dataset(self):
         """Basic dataset test."""

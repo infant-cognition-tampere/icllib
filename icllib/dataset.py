@@ -1,6 +1,7 @@
 """Convenience access methods for reading different datasets."""
 import numpy as np
 from os.path import join
+from csv import DictReader
 
 try:
     from functools32 import lru_cache
@@ -93,7 +94,7 @@ class TrialIterator(object):
             trialid = current_tbt_line['trialid']
             print('fname: %s, trialid: %s' % (current_tbt_line['filename'],
                   str(trialid)))
-            retval = gazedata[np.array(map(str, gazedata['trialid'])) ==
+            retval = gazedata[np.array(list(map(str, gazedata['trialid']))) ==
                               str(trialid)]
 
             gzdmask = np.array([True] * retval.shape[0])
@@ -190,20 +191,22 @@ class TBTFile():
               replaceRotatingTrialIDs - Set True if Trial IDs rotate
         """
         print('Opening %s:' % filename)
-        with open(filename, 'r') as f:
+        with open(filename, 'rt') as f:
             seek_past_first_sep(f)
             dialect = sniff_csv_dialect(f)
 
-            names = [get_common_name(s.lower().strip())
-                     for s in read_csv_names(f, dialect)]
+            r = DictReader(f, delimiter=dialect.delimiter)
+            data = [{k: _convert_type(v) for k, v in d.items()} for d in r]
+            data = {k: [v[k] for v in data] for k in data[0].keys()}
+
+            names = [str(get_common_name(s.lower().strip()))
+                     for s in data.keys()]
 
             print(names)
             self.names = names
-            self.data = np.genfromtxt(f,
-                                      skip_header=0,
-                                      delimiter=dialect.delimiter,
-                                      names=names,
-                                      dtype=None)
+
+            self.data = np.rec.fromarrays(data.values(),
+                                          names=','.join(names))
 
             if replaceRotatingTrialIDs:
                 for gzdfn in np.unique(self.data['filename']):
@@ -254,15 +257,13 @@ class GazedataFile():
         Input filename - Path to Gazedata file
               replaceRotatingTrialIDs - Set True if Trial IDs rotate
         """
-        from csv import DictReader
-
         print("Load GZDF: %s" % filename)
         self.filename = filename
         try:
             raise IOError
             self.data = np.load(filename + '.npz')['data']
         except IOError:
-            with open(filename, 'rb') as f:
+            with open(filename, 'rt') as f:
                 seek_past_first_sep(f)
                 r = DictReader(f, delimiter='\t')
                 data = [{k: _convert_type(v) for k, v in d.items()} for d in r]
