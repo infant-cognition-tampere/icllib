@@ -56,6 +56,34 @@ class CSVDataset(Dataset):
         return np.unique(self.tbt.data['filename'])
 
 
+class CSVProtocolDataset(CSVDataset):
+    """Implementation of CSV datasets which uses protocols."""
+
+    def __init__(self, directory, protocol):
+        """Constructor.
+
+        Input directory - Directory of dataset
+              filename - Name of TBT file in directory
+              protocol - Protocol definition from icllib.dataset.protocol
+        """
+        super(CSVProtocolDataset, self).__init__(
+            directory,
+            protocol.get_tbt_filename(),
+            protocol.get_trial_ids_rotate())
+
+        self.protocol = protocol
+
+    @lru_cache(maxsize=32)
+    def get_gazedata(self, name):
+        """Get Gazedata from Dataset."""
+        gazedata = super(CSVProtocolDataset, self).get_gazedata(name)
+
+        # TODO: More generic transformation method
+        gazedata.data = self.protocol.get_unified_format(gazedata.data)
+
+        return gazedata
+
+
 class TrialIterator(object):
     """Iterate trials from dataset."""
 

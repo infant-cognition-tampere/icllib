@@ -1,7 +1,8 @@
 """Unit test for Dataset module."""
 import unittest2 as unittest
 from os.path import join, exists
-from icllib.dataset import CSVDataset
+from icllib.dataset import CSVDataset, CSVProtocolDataset
+from icllib.dataset.protocol import Kinship
 import numpy as np
 
 basedir = 'tests/testdataset'
@@ -37,6 +38,8 @@ class TestDataset(unittest.TestCase):
         cls.datasets = [CSVDataset(d, tbt) for d, tbt in dir_tbts]
         cls.datasets += [CSVDataset('tests/test_dataset',
                                     'disengagement_results.csv')]
+
+        cls.datasets += [CSVProtocolDataset('tests/test_dataset', Kinship())]
 
     def test_dataset(self):
         """Basic dataset test."""
@@ -80,3 +83,17 @@ class TestDataset(unittest.TestCase):
         for gzn, datasetname in zip(list_of_gznames, dataset_dirs):
             print("Unique gazedata header names in %s: %s" %
                   (datasetname, gzn - common_gznames))
+
+
+class TestProtocol(unittest.TestCase):
+    """Unit test for Protocol classes."""
+
+    def test_basic(self):
+        """Test basic functionality of Protocol."""
+        from icllib.dataset.protocol import Kinship
+
+        p = Kinship()
+
+        p.get_gazedata_substitutes()
+        p.get_gazedata_provides()
+        self.assertEqual('disengagement_results.csv', p.get_tbt_filename())
