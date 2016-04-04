@@ -16,7 +16,10 @@ def distance_between_vector_and_point(vec, point):
     """Calculate distance for each element in vector vec from point.
 
     Input vec NxD Numpy array of vectors,
-          points D Numpy vector,
+          points D Numpy vector.
+
+    Trailing axes should have the same dimensions for NumPy broadcasting to
+    work.
     """
     diff = vec - point
 
