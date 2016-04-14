@@ -292,8 +292,12 @@ class GazedataFile():
             seek_past_first_sep(f)
             r = DictReader(f, delimiter='\t')
             data = [{k: _convert_type(v) for k, v in d.items()} for d in r]
-            data = {k: [v[k] for v in data] for k in data[0].keys()}
 
+            # HACK: Remove last line from gazedata to prevent problems
+            if replaceRotatingTrialIDs:
+                data.pop()
+
+            data = {k: [v[k] for v in data] for k in data[0].keys()}
             names = [_get_common_gzname(s.lower().strip())
                      for s in data.keys()]
 
@@ -311,14 +315,7 @@ class GazedataFile():
             diff[diff < 0] = 1
             d = np.cumsum(np.concatenate(([1], diff)))
 
-            print(d)
-            print(len(d))
-            print(len(self.data['trialid'][selector]))
-            print(self.data.dtype)
-
-            if self.data.dtype['trialid'] == 'S4':
+            if self.data.dtype['trialid'].str[1] == 'S':
                 d = np.array(map(str, d))
 
             self.data['trialid'][selector] = d
-
-        print("Loaded GZDF")
