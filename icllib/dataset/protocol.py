@@ -121,3 +121,37 @@ class Kinship(Protocol):
     eye_positions = {
         'fearful': np.mean([eye_pos_fearful1, eye_pos_fearful2], axis=0)
     }
+
+    def __init__(self):
+        """Constructor."""
+        super(Kinship, self).__init__()
+
+
+class TREC2(Protocol):
+    """Protocol for TREC2 dataset."""
+
+    substitutes = {
+        "XGazePosLeftEye": "left_eye_x_relative",
+        "YGazePosLeftEye": "left_eye_y_relative",
+        "XGazePosRightEye": "right_eye_x_relative",
+        "YGazePosRightEye": "right_eye_y_relative",
+        "DiameterPupilLeftEye": "left_eye_pupil_mm",
+        "DiameterPupilRightEye": "right_eye_pupil_mm",
+        "TimestampSec": "time1",
+        "TimestampMicrosec": "time2"
+    }
+
+    tbtfile = "disengagement_results 7mo 31.10.2013.csv"
+
+    eye_pos_fearful1 = np.array([0.4453125,   0.494791667,
+                                 0.549804688, 0.498697917])
+    eye_pos_fearful2 = np.array([0.438964844, 0.490234375,
+                                 0.559082031, 0.495442708])
+
+    eye_positions = {'fearful.bmp':  eye_pos_fearful1,
+                     'fearful2.bmp': eye_pos_fearful2}
+
+    def __init__(self):
+        """Constructor."""
+        super(TREC2, self).__init__()
+        self.rotating_trial_ids = True
