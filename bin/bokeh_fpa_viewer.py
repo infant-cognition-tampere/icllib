@@ -318,8 +318,6 @@ def get_mean_gazedata():
     df = DataFrame(means_shift)
     df = df.append(DataFrame(means_hold), ignore_index=True)
 
-    print(df)
-
     return ColumnDataSource(data=df)
 
 
@@ -349,7 +347,6 @@ def update_plot(attrname, old, new):
     """Callback to update plot when user changes values."""
     gzdname = gazedata_select.value
     trial_select.options = list_trialids(gzdname)
-    print (list_trialids(gzdname))
     source.data.update(get_data(gazedata_select.value,
                                 trial_select.value).data)
 
