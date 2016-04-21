@@ -265,6 +265,13 @@ def _convert_type(s):
     """Convert type from string to python types while reading CSV."""
     converters = [int, float, str]
 
+    if s == '1.#INF':
+        return np.inf
+    elif s == '-1.#INF':
+        return -np.inf
+    elif s == '1.#IND' or s == '-1.#IND' or s == '1.#QNAN' or s == '-1.#QNAN':
+        return np.nan
+
     for c in converters:
         try:
             return c(s)
