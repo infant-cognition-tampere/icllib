@@ -138,7 +138,9 @@ class TREC2(Protocol):
         "DiameterPupilLeftEye": "left_eye_pupil_mm",
         "DiameterPupilRightEye": "right_eye_pupil_mm",
         "TimestampSec": "time1",
-        "TimestampMicrosec": "time2"
+        "TimestampMicrosec": "time2",
+        "pupil_l": "left_eye_pupil_mm",
+        "pupil_r": "right_eye_pupil_mm"
     }
 
     tbtfile = "disengagement_results 7mo 31.10.2013.csv"
