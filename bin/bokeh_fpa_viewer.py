@@ -13,6 +13,7 @@ from scipy.signal import medfilt
 from tables import open_file
 from pandas import Series
 from functools32 import lru_cache
+import scipy.stats as st
 
 
 fileh = open_file('trec2.h5', 'r')
@@ -36,7 +37,9 @@ additional_columns = ['unified_time',
 generated_columns = ['combined_eye_x_relative',
                      'combined_eye_y_relative',
                      'combined_eye_pupil_mm',
-                     'distance_from_eyes']
+                     'distance_from_eyes',
+                     'distance_from_left_eye',
+                     'distance_from_right_eye']
 
 bokeh_toolset = "box_select,tap,crosshair,pan,reset,resize,save,wheel_zoom"
 
@@ -97,18 +100,62 @@ def gen_mean_plot_from_col(x):
 
     # Plot the line by the x,y values in the source property
     # Shift Green
+    # plot.asterisk('unified_time', x + '_lower_ci_shift', source=mean_source,
+    #               line_width=3,
+    #               line_alpha=0.6,
+    #               alpha=0.5,
+    #               color='#00ff00',
+    #               legend='Shift Lower CI')
+    # plot.asterisk('unified_time', x + '_upper_ci_shift', source=mean_source,
+    #               line_width=3,
+    #               line_alpha=0.6,
+    #               alpha=0.5,
+    #               color='#00ff00',
+    #               legend='Shift Upper CI')
+    plot.segment(x0='unified_time',
+                 x1='unified_time',
+                 y0=x + '_lower_ci' + '_shift',
+                 y1=x + '_upper_ci' + '_shift',
+                 line_width=3,
+                 line_alpha=0.6,
+                 alpha=0.5,
+                 color='#00ff00',
+                 source=mean_source)
     plot.asterisk('unified_time', x + '_shift', source=mean_source,
-                  line_width=3,
+                  line_width=1.0,
                   line_alpha=0.6,
-                  alpha=0.5,
-                  color='#00ff00')
+                  alpha=1.0,
+                  color='#009900',
+                  legend='Shift')
 
     # Hold Red
+    # plot.asterisk('unified_time', x + '_lower_ci_hold', source=mean_source,
+    #               line_width=3,
+    #               line_alpha=0.6,
+    #               alpha=0.5,
+    #               color='#ff0000',
+    #               legend='Hold Lower CI')
+    # plot.asterisk('unified_time', x + '_upper_ci_hold', source=mean_source,
+    #               line_width=3,
+    #               line_alpha=0.6,
+    #               alpha=0.5,
+    #               color='#ff0000',
+    #               legend='Hold Upper CI')
+    plot.segment(x0='unified_time',
+                 x1='unified_time',
+                 y0=x + '_lower_ci' + '_hold',
+                 y1=x + '_upper_ci' + '_hold',
+                 line_width=3,
+                 line_alpha=0.6,
+                 alpha=0.5,
+                 color='#ff0000',
+                 source=mean_source)
     plot.asterisk('unified_time', x + '_hold', source=mean_source,
-                  line_width=3,
+                  line_width=1.0,
                   line_alpha=0.6,
-                  alpha=0.5,
-                  color='#ff0000')
+                  alpha=1.0,
+                  color='#990000',
+                  legend='Hold')
 
     return plot
 
@@ -239,13 +286,18 @@ def _get_data(gzdname, trialid):
                                                        eye1_pos)
     dist_from_eye2 = distance_between_vector_and_point(comb_eye,
                                                        eye2_pos)
+
+    # TODO: Visualize eyes separately
+
     dist_from_eye = np.min(np.vstack([dist_from_eye1, dist_from_eye2]), axis=0)
 
     # TODO: Reindex columns
     generated = np.rec.fromarrays([combined_eye_x,
                                    combined_eye_y,
                                    combined_pupil,
-                                   dist_from_eye],
+                                   dist_from_eye,
+                                   dist_from_eye1,
+                                   dist_from_eye2],
                                   names=generated_columns)
 
     generated = get_time_discretized(table['unified_time'], generated, 300)
@@ -273,14 +325,37 @@ def _calc_mean_for_datas(datas):
 
     return np.rec.fromarrays(cols, names=datas[0].dtype.names)
 
+
+def _calc_confidence_intervals_for_datas(datas, confidence=0.95):
+    def _ci_field(x):
+        values = np.vstack([d[x] for d in datas])
+
+        return st.t.interval(confidence,
+                             len(values) - 1,
+                             loc=np.mean(values, axis=0),
+                             scale=st.sem(values, axis=0))
+
+    fieldnames = datas[0].dtype.names
+    cols = [_ci_field(f) for f in fieldnames]
+    cols_lower = {name + '_lower_ci': field[0] for name, field in
+                  zip(fieldnames, cols)}
+    cols_upper = {name + '_upper_ci': field[1] for name, field in
+                  zip(fieldnames, cols)}
+
+    cols_ci = dict()
+    cols_ci.update(cols_lower)
+    cols_ci.update(cols_upper)
+
+    return np.rec.fromarrays(cols_ci.values(), names=cols_ci.keys())
+
+
 # def for_each_field(fun, arr):
 #     cols = [fun(f) for f in arr.
 
 # TODO: Function to get stimulus from actual gazedata
 
 
-def get_mean_gazedata():
-    """Generate mean ColumnDataSource."""
+def _get_data_for_mean_calc():
     # Get all data based on filters (fearful, valid trialds)
     tbt = get_valid_from_tbt()
     tbt = tbt[tbt['stimulus'] == 'fearful.bmp']
@@ -300,8 +375,17 @@ def get_mean_gazedata():
                     zip(tbt_hold['filename'],
                         map(str, tbt_hold['trialid'])))
 
+    return data_shift, data_hold
+
+
+def get_mean_gazedata():
+    """Generate mean ColumnDataSource."""
+    (data_shift, data_hold) = _get_data_for_mean_calc()
+
     means_shift = _calc_mean_for_datas(data_shift)
     means_hold = _calc_mean_for_datas(data_hold)
+    ci_shift = _calc_confidence_intervals_for_datas(data_shift)
+    ci_hold = _calc_confidence_intervals_for_datas(data_hold)
 
     def append_tag(s, t):
         if s == 'unified_time':
@@ -313,10 +397,28 @@ def get_mean_gazedata():
         map(lambda x: append_tag(x, '_shift'), means_shift.dtype.names)
     means_hold.dtype.names = \
         map(lambda x: append_tag(x, '_hold'), means_hold.dtype.names)
+    ci_shift.dtype.names = \
+        map(lambda x: append_tag(x, '_shift'), ci_shift.dtype.names)
+    ci_hold.dtype.names = \
+        map(lambda x: append_tag(x, '_hold'), ci_hold.dtype.names)
+
+    def _append_columns(dest, src):
+        dest2 = dest.copy()
+        for f in src.dtype.names:
+            try:
+                dest2 = _append_column(dest2, f, src[f])
+            except ValueError:
+                pass
+        return dest2
+
+    # Combine columns into one numpy recarray
+    dest = means_shift.copy()
+    dest = _append_columns(dest, means_hold)
+    dest = _append_columns(dest, ci_shift)
+    dest = _append_columns(dest, ci_hold)
 
     # Construct pandas DataFrame
-    df = DataFrame(means_shift)
-    df = df.append(DataFrame(means_hold), ignore_index=True)
+    df = DataFrame(dest)
 
     return ColumnDataSource(data=df)
 
